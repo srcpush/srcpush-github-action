@@ -1,0 +1,27 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  job_id:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Tools cache
+        id: tool-caches
+        uses: actions/cache@v4
+        with:
+          path: /opt/hostedtoolcache/srcpush
+          key: srcpush-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            srcpush-${{ runner.os }}-
+      - name: Setup Source Push CLI
+        uses: 'srcpush/srcpush-github-action@v1.0.0'
+        id: setup-srcpush-cli
+        with:
+          version: 'latest'
+          accessKey: ${{ secrets.SRCPUSH_ACCESS_KEY }}
+      - name: Release Android bundle
+        run: srcpush release-react myAmazingAndroidApp android -d Staging
+      - name: Release ios bundle
+        run: srcpush release-react myAmazingIOSApp ios -d Staging

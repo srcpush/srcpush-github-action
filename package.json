@@ -1,0 +1,63 @@
+{
+  "private": true,
+  "name": "srcpush-github-action",
+  "version": "0.0.1",
+  "description": "Source Push CLI in your GitHub Actions workflow",
+  "main": "build/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srcpush/srcpush-github-action.git"
+  },
+  "author": "Source Push <support@srcpush.com>",
+  "bugs": {
+    "url": "https://github.com/srcpush/srcpush-github-action/issues"
+  },
+  "homepage": "https://github.com/srcpush/srcpush-github-action#readme",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint .",
+    "build": "node ncc.js",
+    "clean": "git clean -xdf ./build"
+  },
+  "keywords": [
+    "OTA",
+    "CodePush",
+    "Source Push",
+    "AppCenter"
+  ],
+  "license": "MIT",
+  "prettier": {
+    "printWidth": 100,
+    "tabWidth": 2,
+    "singleQuote": true,
+    "bracketSameLine": true,
+    "trailingComma": "es5",
+    "arrowParens": "avoid",
+    "endOfLine": "auto"
+  },
+  "dependencies": {
+    "@actions/cache": "^4.0.0",
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.0",
+    "@actions/io": "^1.1.2",
+    "@actions/tool-cache": "^2.0.2",
+    "semver": "^7.7.1",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@tsconfig/node20": "^20.1.4",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.4",
+    "@types/semver": "^7.5.8",
+    "@vercel/ncc": "^0.38.3",
+    "eslint": "^8.57.1",
+    "eslint-config-universe": "^14.0.0",
+    "getenv": "^1.0.0",
+    "jest": "^29.3.1",
+    "jest-snapshot-prettier": "npm:prettier@^2.8.8",
+    "prettier": "^3.5.1",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.3"
+  }
+}

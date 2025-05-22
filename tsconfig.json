@@ -1,0 +1,14 @@
+{
+  "extends": "@tsconfig/node20",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "rootDir": "./src",
+    "module": "CommonJS",
+    "moduleResolution": "node"
+  },
+  "exclude": [
+    "build",
+    "node_modules",
+  ]
+}

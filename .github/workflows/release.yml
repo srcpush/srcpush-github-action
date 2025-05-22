@@ -1,0 +1,56 @@
+name: 'Release'
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'release/**/*'
+
+jobs:
+  create-release:
+    if: "startsWith(github.event.head_commit.message, 'Release: v')"
+    runs-on: 'ubuntu-latest'
+    outputs:
+      created: '${{ steps.create-release.outputs.created || false }}'
+      tag: '${{ steps.create-release.outputs.tag }}'
+      version: '${{ steps.create-release.outputs.version }}'
+    steps:
+      - name: 'Create release'
+        id: 'create-release'
+        uses: 'abcxyz/pkg/.github/actions/create-release@main' # ratchet:exclude
+        with:
+          github_token: '${{ secrets.ACTIONS_BOT_TOKEN }}'
+          expected_email: 'support@srcpush.com'
+
+  publish-release:
+    runs-on: 'ubuntu-latest'
+    needs:
+      - 'create-release'
+    steps:
+      - name: 'Publish release'
+        env:
+          GH_TOKEN: '${{ secrets.ACTIONS_BOT_TOKEN }}'
+          RELEASE_VERSION: 'v${{ needs.create-release.outputs.version }}'
+          REPO: '${{ github.repository }}'
+        run: |-
+          gh release edit "${RELEASE_VERSION}" \
+            --repo "${REPO}" \
+            --draft=false
+
+  cleanup-failed-release:
+    if: |-
+      ${{ always() && needs.create-release.outputs.created == 'true' && contains(fromJSON('["failure", "cancelled", "skipped"]'), needs.publish-release.result) }}
+    runs-on: 'ubuntu-latest'
+    needs:
+      - 'create-release'
+      - 'publish-release'
+    steps:
+      - name: 'Cleanup failed release'
+        env:
+          GH_TOKEN: '${{ secrets.ACTIONS_BOT_TOKEN }}'
+          RELEASE_VERSION: 'v${{ needs.create-release.outputs.version }}'
+          REPO: '${{ github.repository }}'
+        run: |-
+          gh release delete "${RELEASE_VERSION}" \
+            --repo "${REPO}" \
+            --yes

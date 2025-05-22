@@ -1,0 +1,46 @@
+---
+name: Set up Source Push management cli environment
+author: Source Push
+description: |-
+  Downloads, installs, and configures a Source Push management CLI environment.
+  Adds the `srcpush` CLI command to the $PATH.
+runs:
+  using: node20
+  main: build/setup/index.js
+  post: build/setup-post/index.js
+inputs:
+  version:
+    description: |-
+      A string representing the version or version constraint of the Source Push CLI
+      (`srcpush`) to install (e.g. `"0.0.3"` or `">= 0.0.3"`). The default
+      value is `"latest"`, which will always download and install the latest
+      available SRCPush CLI version.
+
+          - uses: 'srcpush/srcpush-github-action@v1'
+            with:
+              version: '>= 0.0.3'
+
+      If there is no installed `srcpush` version that matches the given constraint, this GitHub Action will download and 
+      install the latest available version that still matches the constraint.
+
+      You are responsible for ensuring the `srcpush` version matches the features required.
+    default: "latest"
+    required: false
+  accessKey:
+    description: |-
+      Source Push access key. Considered to be a secret.
+
+         - uses: 'srcpush/srcpush-github-action@v1'
+           with:
+             accessKey:  <your Source Push access-key from GitHub secrets>
+
+      You are responsible for ensuring the accessKey was not neither expired nor deleted by a user who created it.
+    required: false
+outputs:
+  version:
+    description: |-
+      Version of srcpush cli that was installed.
+
+branding:
+  icon: "terminal"
+  color: "blue"

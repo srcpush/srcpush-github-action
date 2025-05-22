@@ -1,0 +1,96 @@
+name: 'Draft release'
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_strategy:
+        description: 'Version strategy: The strategy to used to update the version based on semantic versioning (more info at https://semver.org/).'
+        required: true
+        default: 'patch'
+        type: 'choice'
+        options:
+          - 'major'
+          - 'minor'
+          - 'patch'
+    secrets:
+      ACTIONS_BOT_TOKEN:
+        required: true
+  workflow_call:
+    inputs:
+      version_strategy:
+        description: 'Version strategy: The strategy to used to update the version based on semantic versioning (more info at https://semver.org/).'
+        required: true
+        type: 'string'
+    secrets:
+      ACTIONS_BOT_TOKEN:
+        required: true
+
+jobs:
+  draft-release:
+    name: 'Draft Release'
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683' # ratchet:actions/checkout@v4
+
+      - name: 'Setup node'
+        uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: 'Build'
+        id: 'build'
+        shell: 'bash'
+        env:
+          VERSION_STRATEGY: '${{ inputs.version_strategy }}'
+        run: |-
+          CURRENT_VERSION="$(jq -r .version ./package.json)"
+          echo "::debug::computed current version: ${CURRENT_VERSION}"
+          echo "current_version=${CURRENT_VERSION}" >> $GITHUB_OUTPUT
+
+          npm version "${VERSION_STRATEGY}" \
+            --no-git-tag-version \
+            --no-commit-hooks \
+            --no-workspaces-update
+          NEXT_VERSION="$(jq -r .version ./package.json)"
+          echo "::debug::computed next version: ${NEXT_VERSION}"
+          echo "next_version=${NEXT_VERSION}" >> $GITHUB_OUTPUT
+
+          npm ci
+          [[ "$(npm run --json | jq -r 'has("docs")')" == "true" ]] && npm run docs
+          npm run build
+
+      - name: 'Generate release notes'
+        id: 'generate-release-notes'
+        uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
+        env:
+          CURRENT_VERSION: '${{ steps.build.outputs.current_version }}'
+          NEXT_VERSION: '${{ steps.build.outputs.next_version }}'
+        with:
+          github-token: '${{ secrets.ACTIONS_BOT_TOKEN }}'
+          script: |-
+            let releaseNotes = '';
+            try {
+              const releaseNotesResponse = await github.rest.repos.generateReleaseNotes({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: `v${process.env.NEXT_VERSION}`,
+                previous_tag_name: `v${process.env.CURRENT_VERSION}`,
+              });
+              releaseNotes = releaseNotesResponse.data.body;
+            } catch(err) {
+              core.debug(`error generating release notes: ${err}`)
+              core.warning('No existing releases found, assuming initial release');
+              releaseNotes = 'Initial release'
+            }
+            core.setOutput('release_notes', releaseNotes)
+
+      - name: 'Create/Update Pull Request'
+        uses: 'abcxyz/pkg/.github/actions/create-pull-request@main' # ratchet:exclude
+        with:
+          token: '${{ secrets.ACTIONS_BOT_TOKEN }}'
+          base_branch: '${{ github.ref_name }}'
+          head_branch: 'actions/draft-release-${{ github.ref_name }}'
+          title: 'Release: v${{ steps.build.outputs.next_version }}'
+          body: '${{ steps.generate-release-notes.outputs.release_notes }}'
+          compute_paths: true
